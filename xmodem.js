@@ -20,13 +20,13 @@ program
     const stats = fs.statSync(filename)
 
     const bar1 = new cliProgress.SingleBar({
-      format: 'CLI Progress |' + _colors.cyan('{bar}') + '| {percentage}% || {value}/{total} bytes',
+      format: '{message} |' + _colors.cyan('{bar}') + '| {percentage}% || {value}/{total} bytes',
       barCompleteChar: '\u2588',
       barIncompleteChar: '\u2591',
-      hideCursor: true
+      hideCursor: true,
     });
 
-    bar1.start(stats.size, 0);
+    bar1.start(stats.size, 0, {message: 'Sending'});
 
     const connection = new SerialPort(port, {
       baudRate: baud,
@@ -42,7 +42,7 @@ program
           bar1.update(x.block * xmodem.block_size);
       })
       .on('stop', () => {
-        bar1.update(stats.size)
+        bar1.update(stats.size, {message: 'Sent'})
         bar1.stop()
 
         setTimeout(() => process.exit(), 1)

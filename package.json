@@ -1,14 +1,14 @@
 {
   "name": "xmodemjs",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple tool to transmit a file over a COM/Serial Port using the XMODEM protocol",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "type": "module",
-  "author": "",
-  "license": "ISC",
+  "author": "Dean Netherton",
+  "license": "MIT",
   "dependencies": {
     "cli-progress": "^3.9.0",
     "colors": "^1.4.0",

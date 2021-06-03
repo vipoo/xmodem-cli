@@ -11,7 +11,7 @@ A simple tool to transmit a file over a COM/Serial Port using the XMODEM protoco
 ```
 git clone ...
 
-npm install
+npm ci
 ```
 
 ### Usage:
