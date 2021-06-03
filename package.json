@@ -1,0 +1,20 @@
+{
+  "name": "xmodemjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cli-progress": "^3.9.0",
+    "colors": "^1.4.0",
+    "commander": "^7.2.0",
+    "serialport": "^9.0.4",
+    "tracer": "^1.1.4",
+    "xmodem.js": "^0.1.0"
+  }
+}
