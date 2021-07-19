@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import xmodem from 'xmodem.js'
+import xmodem from './protocols/xmodem.cjs'
 import SerialPort from 'serialport'
 import fs from 'fs'
 import { Command, Option } from 'commander/esm.mjs'
@@ -19,35 +19,71 @@ program
 
     const stats = fs.statSync(filename)
 
-    const bar1 = new cliProgress.SingleBar({
-      format: '{message} |' + _colors.cyan('{bar}') + '| {percentage}% || {value}/{total} bytes',
-      barCompleteChar: '\u2588',
-      barIncompleteChar: '\u2591',
-      hideCursor: true,
+    let bar1
+    let transferRateFn
+    let previousSent = 0
+    let totalSent = 0
+    let avgSent = '--'
+    let startTime
+
+    process.on('unhandledRejection', error => {
+      bar1.stop();
+      console.log('unhandledRejection', error);
+      process.exit(1)
     });
 
-    bar1.start(stats.size, 0, {message: 'Sending'});
-
     const connection = new SerialPort(port, {
-      baudRate: baud,
+      baudRate: parseInt(baud),
       dataBits: 8,
       stopBits: 1,
       parity: 'none',
       rtscts: true
     })
 
+    process.on('SIGINT', () => {
+      connection.close();
+      process.exit();
+    })
+
     xmodem
+      .on('start', mode => {
+        bar1 = new cliProgress.SingleBar({
+          format: '{message} |' + _colors.cyan('{bar}') + '| {percentage}% || {value}/{total} bytes || {avgSent} b/s',
+          barCompleteChar: '\u2588',
+          barIncompleteChar: '\u2591',
+          hideCursor: true,
+        });
+
+        startTime = Date.now()
+
+        bar1.start(stats.size, 0, {message: `Sending with ${mode}`, avgSent});
+
+        transferRateFn = setInterval(() => {
+          avgSent = (totalSent-previousSent)
+
+          previousSent = totalSent
+        }, 1000)
+
+      })
       .on('status', (x) => {
-        if (x.block)
-          bar1.update(x.block * xmodem.block_size);
+        if (x.block) {
+          totalSent = x.block * xmodem.block_size
+          bar1.update(totalSent, {avgSent});
+        }
       })
       .on('stop', () => {
-        bar1.update(stats.size, {message: 'Sent'})
+        const totalTime = (Date.now() - startTime)/1000
+        avgSent = Math.round(totalSent/totalTime)
+        bar1.update(stats.size, {message: 'Sent', avgSent})
         bar1.stop()
 
         setTimeout(() => process.exit(), 1)
       })
-      .send(connection, fs.readFileSync(filename))
+      .on('error', x => {
+        console.log(x)
+        process.exit(1)
+      })
+      .send(connection, fs.readFileSync(filename), {packetType: xmodem.XMODEM_1K})
   })
 
 program.parse(process.argv);

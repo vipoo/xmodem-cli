@@ -10,11 +10,15 @@
   "author": "Dean Netherton",
   "license": "MIT",
   "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.10.0",
     "cli-progress": "^3.9.0",
     "colors": "^1.4.0",
-    "commander": "^7.2.0",
-    "serialport": "^9.0.4",
-    "tracer": "^1.1.4",
-    "xmodem.js": "^0.1.0"
+    "command": "0.0.5",
+    "commander": "^8.0.0",
+    "crc": "^3.8.0",
+    "serialport": "^9.2.0",
+    "telnet-client": "^1.4.9",
+    "tracer": "^1.1.5"
   }
 }
