@@ -18,6 +18,7 @@
  const log = { info: function() {}, warn: function() {}, error: function() {}, debug: function() {} };
 
  const SOH = 0x01;
+ const STX = 0x02;
  const EOT = 0x04;
  const ACK = 0x06;
  const NAK = 0x15;

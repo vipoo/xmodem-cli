@@ -2,7 +2,10 @@
   "name": "xmodemjs",
   "version": "1.0.0",
   "description": "A simple tool to transmit a file over a COM/Serial Port using the XMODEM protocol",
-  "main": "index.js",
+  "main": "xmodem.js",
+  "bin": {
+    "xmodem": "xmodem.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -20,5 +23,8 @@
     "serialport": "^9.2.0",
     "telnet-client": "^1.4.9",
     "tracer": "^1.1.5"
+  },
+  "devDependencies": {
+    "caxa": "^2.1.0"
   }
 }

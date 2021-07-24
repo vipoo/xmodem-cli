@@ -3,7 +3,7 @@
 import xmodem from './protocols/xmodem.cjs'
 import SerialPort from 'serialport'
 import fs from 'fs'
-import { Command, Option } from 'commander/esm.mjs'
+import { Command, Option } from 'commander'
 import cliProgress from 'cli-progress'
 import _colors from 'colors'
 
