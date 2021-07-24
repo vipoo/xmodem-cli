@@ -7,22 +7,18 @@
     "xmodem": "xmodem.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-exe": "caxa --input . --output xmodem.exe --exclude .git --exclude xmodem.exe -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/xmodem.js\""
   },
   "type": "module",
   "author": "Dean Netherton",
   "license": "MIT",
   "dependencies": {
-    "blessed": "^0.1.81",
-    "blessed-contrib": "^4.10.0",
     "cli-progress": "^3.9.0",
     "colors": "^1.4.0",
-    "command": "0.0.5",
     "commander": "^8.0.0",
     "crc": "^3.8.0",
-    "serialport": "^9.2.0",
-    "telnet-client": "^1.4.9",
-    "tracer": "^1.1.5"
+    "serialport": "^9.2.0"
   },
   "devDependencies": {
     "caxa": "^2.1.0"
