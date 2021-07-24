@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build-exe": "caxa --input . --output xmodem.exe --exclude .git --exclude xmodem.exe -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/xmodem.js\""
+    "build-exe": "caxa --input . --output xmodem.exe --exclude .git --exclude xmodem.sh --exclude xmodem.exe -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/xmodem.js\"",
+    "build-linux": "caxa --input . --output xmodem.sh --exclude .git --exclude xmodem.sh --exclude xmodem.exe -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/xmodem.js\""
   },
   "type": "module",
   "author": "Dean Netherton",

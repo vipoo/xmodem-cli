@@ -6,13 +6,18 @@ A simple tool to transmit a file over a COM/Serial Port using the XMODEM protoco
 
 * Requires node 16.3.0 or higher
 
-### Installing
+### Download Release
+
+You can download pre-build binaries for your OS within project's github releases.
+
+### Installing via git clone
 
 ```
-git clone ...
+git clone git@github.com:vipoo/xmodem-cli.git
 
 npm ci
 ```
+
 
 ### Usage:
 

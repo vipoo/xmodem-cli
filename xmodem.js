@@ -27,7 +27,8 @@ program
     let startTime
 
     process.on('unhandledRejection', error => {
-      bar1.stop();
+      if (bar1)
+        bar1.stop();
       console.log('unhandledRejection', error);
       process.exit(1)
     });
