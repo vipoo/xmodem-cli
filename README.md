@@ -27,6 +27,7 @@ Usage: xmodem [options] <port> <filename>
 Transmit the file over serial port using the xmodem protocol
 
 Options:
-  -b, --baud <baud-rate>  the baud rate to use (default: 38400)
-  -h, --help              display help for command
+  -b, --baud <baud-rate>     the baud rate to use (default: 19200)
+  -p, --protocol <protocol>  the protocol to use (choices: "xmodem", "xmodem1k", default: "xmodem")
+  -h, --help                 display help for command
 ```
