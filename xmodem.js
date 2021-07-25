@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import xmodem from './protocols/xmodem.js'
+import XModem from './protocols/xmodem.js'
 import SerialPort from 'serialport'
 import fs from 'fs'
 import { Command, Option } from 'commander'
@@ -45,6 +45,8 @@ program
       process.exit()
     })
 
+    const xmodem = new XModem()
+
     xmodem
       .on('start', mode => {
         bar1 = new cliProgress.SingleBar({
@@ -83,7 +85,7 @@ program
         console.log(x)
         process.exit(1)
       })
-      .send(connection, fs.readFileSync(filename), {packetType: xmodem.XMODEM_1K})
+      .send(connection, fs.readFileSync(filename))
   })
 
 program.parse(process.argv)
