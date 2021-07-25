@@ -7,7 +7,7 @@ import { Command, Option } from 'commander'
 import cliProgress from 'cli-progress'
 import _colors from 'colors'
 
-const program = new Command();
+const program = new Command()
 
 program
   .arguments('<port> <filename>')
@@ -20,7 +20,6 @@ program
     const stats = fs.statSync(filename)
 
     let bar1
-    let transferRateFn
     let previousSent = 0
     let totalSent = 0
     let avgSent = '--'
@@ -28,10 +27,10 @@ program
 
     process.on('unhandledRejection', error => {
       if (bar1)
-        bar1.stop();
-      console.log('unhandledRejection', error);
+        bar1.stop()
+      console.log('unhandledRejection', error)
       process.exit(1)
-    });
+    })
 
     const connection = new SerialPort(port, {
       baudRate: parseInt(baud),
@@ -42,8 +41,8 @@ program
     })
 
     process.on('SIGINT', () => {
-      connection.close();
-      process.exit();
+      connection.close()
+      process.exit()
     })
 
     xmodem
@@ -53,13 +52,13 @@ program
           barCompleteChar: '\u2588',
           barIncompleteChar: '\u2591',
           hideCursor: true,
-        });
+        })
 
         startTime = Date.now()
 
-        bar1.start(stats.size, 0, {message: `Sending with ${mode}`, avgSent});
+        bar1.start(stats.size, 0, {message: `Sending with ${mode}`, avgSent})
 
-        transferRateFn = setInterval(() => {
+        setInterval(() => {
           avgSent = (totalSent-previousSent)
 
           previousSent = totalSent
@@ -69,7 +68,7 @@ program
       .on('status', (x) => {
         if (x.block) {
           totalSent = x.block * xmodem.block_size
-          bar1.update(totalSent, {avgSent});
+          bar1.update(totalSent, {avgSent})
         }
       })
       .on('stop', () => {
@@ -87,4 +86,4 @@ program
       .send(connection, fs.readFileSync(filename), {packetType: xmodem.XMODEM_1K})
   })
 
-program.parse(process.argv);
+program.parse(process.argv)
