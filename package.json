@@ -11,7 +11,7 @@
     "build-exe": "caxa --input . --output xmodem.exe --exclude .git --exclude xmodem.sh --exclude xmodem.exe -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/xmodem.js\"",
     "build-linux": "caxa --input . --output xmodem.sh --exclude .git --exclude xmodem.sh --exclude xmodem.exe -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/xmodem.js\"",
     "lint": "eslint --ext cjs,mjs,js --fix ."
-    },
+  },
   "type": "module",
   "author": "Dean Netherton",
   "license": "MIT",
@@ -20,6 +20,7 @@
     "colors": "^1.4.0",
     "commander": "^8.0.0",
     "crc": "^3.8.0",
+    "debug": "^4.3.2",
     "serialport": "^9.2.0"
   },
   "devDependencies": {

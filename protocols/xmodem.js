@@ -1,3 +1,9 @@
+import fs from 'fs'
+import crc from 'crc'
+import events from 'events'
+import debug from 'debug'
+
+const debugLog = debug('xmodem')
 /**
  * Instantiate by `var xmodem = require('xmodem.js');`
  * @class
@@ -5,17 +11,13 @@
  * @name Xmodem
  * @license BSD-2-Clause
  */
-var Xmodem = function () {}
-
-var fs = require('fs')
-var crc = require('crc')
-var events = require('events')
+const Xmodem = function () {}
 
 /* Either use the tracer module to output infromation
   * or redefine the functions for silence!
   */
 // const log = require('tracer').colorConsole();
-const log = { info: function() {}, warn: function() {}, error: function() {}, debug: function() {} }
+// const log = { info: function() {}, warn: function() {}, error: function() {}, debug: function() {} }
 
 const SOH = 0x01
 // const STX = 0x02
@@ -26,7 +28,7 @@ const NAK = 0x15
 const FILLER = 0x1A
 const CRC_MODE = 0x43 // 'C'
 
-var receive_interval_timer = false
+let receive_interval_timer = false
 
 Xmodem.prototype = new events.EventEmitter()
 
@@ -102,10 +104,6 @@ Xmodem.prototype.send = function(socket, dataBuffer) {
   var sent_eof = false
   var _self = this
 
-  this.log(dataBuffer.length)
-
-  private_stuff()
-
   // FILLER
   for(let i=0; i < this.XMODEM_START_BLOCK; i++) {
     packagedBuffer.push('')
@@ -134,7 +132,7 @@ Xmodem.prototype.send = function(socket, dataBuffer) {
       * checksum mode or CRC mode.
       */
     if(data[0] === CRC_MODE && blockNumber === _self.XMODEM_START_BLOCK) {
-      log.info('[SEND] - received C byte for CRC transfer!')
+      debugLog('[SEND] - received C byte for CRC transfer!')
       _self.XMODEM_OP_MODE = 'crc'
       if(packagedBuffer.length > blockNumber) {
         /**
@@ -149,7 +147,7 @@ Xmodem.prototype.send = function(socket, dataBuffer) {
       }
     }
     else if(data[0] === NAK && blockNumber === _self.XMODEM_START_BLOCK) {
-      log.info('[SEND] - received NAK byte for standard checksum transfer!')
+      debugLog('[SEND] - received NAK byte for standard checksum transfer!')
       _self.XMODEM_OP_MODE = 'normal'
       if(packagedBuffer.length > blockNumber) {
         _self.emit('start', _self.XMODEM_OP_MODE)
@@ -164,7 +162,7 @@ Xmodem.prototype.send = function(socket, dataBuffer) {
       */
     else if(data[0] === ACK && blockNumber > _self.XMODEM_START_BLOCK) {
       // Woohooo we are ready to send the next block! :)
-      log.info('ACK RECEIVED')
+      debugLog('ACK RECEIVED')
       _self.emit('status', { action: 'recv', signal: 'ACK' })
       if(packagedBuffer.length > blockNumber) {
         sendBlock(socket, blockNumber, packagedBuffer[blockNumber], _self.XMODEM_OP_MODE)
@@ -175,13 +173,13 @@ Xmodem.prototype.send = function(socket, dataBuffer) {
         // We are EOT
         if(sent_eof === false) {
           sent_eof = true
-          log.info('WE HAVE RUN OUT OF STUFF TO SEND, EOT EOT!')
+          debugLog('WE HAVE RUN OUT OF STUFF TO SEND, EOT EOT!')
           _self.emit('status', { action: 'send', signal: 'EOT' })
           socket.write(Buffer.from([EOT]))
         }
         else {
           // We are finished!
-          log.info('[SEND] - Finished!')
+          debugLog('[SEND] - Finished!')
           _self.emit('stop', 0)
           socket.removeListener('data', sendData)
         }
@@ -189,11 +187,11 @@ Xmodem.prototype.send = function(socket, dataBuffer) {
     }
     else if(data[0] === NAK && blockNumber > _self.XMODEM_START_BLOCK) {
       if (blockNumber === packagedBuffer.length && sent_eof) {
-        log.info('[SEND] - Resending EOT, because receiver responded with NAK.')
+        debugLog('[SEND] - Resending EOT, because receiver responded with NAK.')
         _self.emit('status', { action: 'send', signal: 'EOT' })
         socket.write(Buffer.from([EOT]))
       } else {
-        log.info('[SEND] - Packet corruption detected, resending previous block.')
+        debugLog('[SEND] - Packet corruption detected, resending previous block.')
         _self.emit('status', { action: 'recv', signal: 'NAK' })
         blockNumber--
         if(packagedBuffer.length > blockNumber) {
@@ -204,11 +202,11 @@ Xmodem.prototype.send = function(socket, dataBuffer) {
       }
     }
     else {
-      log.warn('GOT SOME UNEXPECTED DATA which was not handled properly!')
-      log.warn('===>')
-      log.warn(data)
-      log.warn('<===')
-      log.warn('blockNumber: ' + blockNumber)
+      debugLog('GOT SOME UNEXPECTED DATA which was not handled properly!')
+      debugLog('===>')
+      debugLog(data)
+      debugLog('<===')
+      debugLog('blockNumber: ' + blockNumber)
     }
   }
 
@@ -239,11 +237,11 @@ Xmodem.prototype.receive = function(socket, filename) {
 
   // Let's try to initate transfer with XMODEM-CRC
   if(this.XMODEM_OP_MODE === 'crc') {
-    log.info('CRC init sent')
+    debugLog('CRC init sent')
     socket.write(Buffer.from([CRC_MODE]))
     receive_interval_timer = setIntervalX(function () {
       if (transfer_initiated === false) {
-        log.info('CRC init sent')
+        debugLog('CRC init sent')
         socket.write(Buffer.from([CRC_MODE]))
       }
       else {
@@ -253,7 +251,7 @@ Xmodem.prototype.receive = function(socket, filename) {
       // Fallback to standard XMODEM
       if (receive_interval_timer === false && transfer_initiated === false) {
         receive_interval_timer = setIntervalX(function () {
-          log.info('NAK init sent')
+          debugLog('NAK init sent')
           socket.write(Buffer.from([NAK]))
           _self.XMODEM_OP_MODE = 'normal'
         }, 3000, nak_tick)
@@ -262,7 +260,7 @@ Xmodem.prototype.receive = function(socket, filename) {
   }
   else {
     receive_interval_timer = setIntervalX(function () {
-      log.info('NAK init sent')
+      debugLog('NAK init sent')
       socket.write(Buffer.from([NAK]))
       _self.XMODEM_OP_MODE = 'normal'
     }, 3000, nak_tick)
@@ -270,10 +268,10 @@ Xmodem.prototype.receive = function(socket, filename) {
 
   const receiveData = function(data) {
     tryCounter++
-    log.info('[RECV] - Received: ' + data.toString('utf-8'))
-    log.info(data)
+    debugLog('[RECV] - Received: ' + data.toString('utf-8'))
+    debugLog(data)
     if(data[0] === NAK && blockNumber === this.XMODEM_START_BLOCK) {
-      log.info('[RECV] - received NAK byte!')
+      debugLog('[RECV] - received NAK byte!')
     }
     else if(data[0] === SOH && tryCounter <= _self.XMODEM_MAX_ERRORS) {
       if(transfer_initiated === false) {
@@ -284,14 +282,14 @@ Xmodem.prototype.receive = function(socket, filename) {
       }
 
       receiveBlock(socket, blockNumber, data, _self.block_size, _self.XMODEM_OP_MODE, function(current_block) {
-        log.info(current_block)
+        debugLog(current_block)
         packagedBuffer.push(current_block)
         tryCounter = 0
         blockNumber++
       })
     }
     else if(data[0] === EOT) {
-      log.info('Received EOT')
+      debugLog('Received EOT')
       socket.write(Buffer.from([ACK]))
       blockNumber--
       for(let i = packagedBuffer[blockNumber].length - 1; i >= 0; i--) {
@@ -316,27 +314,16 @@ Xmodem.prototype.receive = function(socket, filename) {
       })
     }
     else {
-      log.warn('GOT SOME UNEXPECTED DATA which was not handled properly!')
-      log.warn('===>')
-      log.warn(data)
-      log.warn('<===')
-      log.warn('blockNumber: ' + blockNumber)
+      debugLog('GOT SOME UNEXPECTED DATA which was not handled properly!')
+      debugLog('===>')
+      debugLog(data)
+      debugLog('<===')
+      debugLog('blockNumber: ' + blockNumber)
     }
   }
 
   socket.on('data', receiveData)
 
-}
-
-Xmodem.prototype.log = function(data) {
-  log.info('modem! : ' + data)
-}
-
-module.exports = new Xmodem()
-
-// Utility functions that are not exported
-var private_stuff = function() {
-  log.info('This is private')
 }
 
 /**
@@ -362,8 +349,8 @@ var sendBlock = function(socket, blockNr, blockData, mode) {
     Buffer.from([(0xFF - blockNr)]),
     blockData
   ])
-  log.info('SENDBLOCK! Data length: ' + blockData.length)
-  log.info(sendBuffer)
+  debugLog('SENDBLOCK! Data length: ' + blockData.length)
+  debugLog(sendBuffer)
   if(mode === 'crc') {
     var crcString = crc.crc16xmodem(blockData).toString(16)
     // Need to avoid odd string for Buffer creation
@@ -389,7 +376,7 @@ var sendBlock = function(socket, blockNr, blockData, mode) {
     }
     sendBuffer = Buffer.concat([sendBuffer, Buffer.from(crcCalc, 'hex')])
   }
-  log.info('Sending buffer with total length: ' + sendBuffer.length)
+  debugLog('Sending buffer with total length: ' + sendBuffer.length)
   socket.write(sendBuffer)
 }
 
@@ -407,12 +394,12 @@ var receiveBlock = function(socket, blockNr, blockData, block_size, mode, callba
         current_block = blockData.slice(3, blockData.length-checksum_length)
       }
       else {
-        log.error('ERROR: Synch issue! Received: ' + block + ' Expected: ' + blockNr)
+        debugLog('ERROR: Synch issue! Received: ' + block + ' Expected: ' + blockNr)
         return
       }
     }
     else {
-      log.error('ERROR: Block integrity check failed!')
+      debugLog('ERROR: Block integrity check failed!')
       socket.write(Buffer.from([NAK]))
       return
     }
@@ -422,27 +409,29 @@ var receiveBlock = function(socket, blockNr, blockData, block_size, mode, callba
       callback(current_block)
     }
     else {
-      log.error('ERROR: Received block size did not match the expected size. Received: ' + current_block.length + ' | Expected: ' + block_size)
+      debugLog('ERROR: Received block size did not match the expected size. Received: ' + current_block.length + ' | Expected: ' + block_size)
       socket.write(Buffer.from([NAK]))
       return
     }
   }
   else {
-    log.error('ERROR!')
+    debugLog('ERROR!')
     return
   }
 }
 
-var writeFile = function(buffer, filename, callback) {
-  log.info('writeFile called')
+function writeFile(buffer, filename, callback) {
+  debugLog('writeFile called')
   var fileStream = fs.createWriteStream(filename)
   fileStream.once('open', function() {
-    log.info('File stream opened, buffer length: ' + buffer.length)
+    debugLog('File stream opened, buffer length: ' + buffer.length)
     for(let i = 0; i < buffer.length; i++) {
       fileStream.write(buffer[i])
     }
     fileStream.end()
-    log.info('File written')
+    debugLog('File written')
     callback()
   })
 }
+
+export default new Xmodem()

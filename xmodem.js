@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import xmodem from './protocols/xmodem.cjs'
+import xmodem from './protocols/xmodem.js'
 import SerialPort from 'serialport'
 import fs from 'fs'
 import { Command, Option } from 'commander'
