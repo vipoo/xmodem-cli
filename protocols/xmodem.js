@@ -4,7 +4,7 @@ import {EventEmitter} from 'events'
 import debug from 'debug'
 
 const SOH = 0x01
-// const STX = 0x02
+const STX = 0x02
 const EOT = 0x04
 const ACK = 0x06
 const NAK = 0x15
@@ -12,12 +12,19 @@ const NAK = 0x15
 const FILLER = 0x1A
 const CRC_MODE = 0x43 // 'C'
 
+export const PROTOCOLS = {
+  XMODEM: 1,
+  XMODEM1K: 2
+}
+
 const debugLog = debug('xmodem')
 
 export default class Xmodem extends EventEmitter {
   constructor(options = {}) {
     super()
     this.receive_interval_timer = false
+
+    this.PROTOCOL = options.PROTOCOL || PROTOCOLS.XMODEM
 
     /**
   * how many timeouts in a row before the sender gives up?
@@ -75,7 +82,10 @@ export default class Xmodem extends EventEmitter {
   * @type {integer}
   * @default
   */
-    this.block_size = options.block_size || 128
+    this.block_size = options.block_size || (this.PROTOCOL === PROTOCOLS.XMODEM1K ? 1024 : 128)
+
+    this.packet_request_signal = this.PROTOCOL === PROTOCOLS.XMODEM1K ? STX : SOH
+    this.packet_request_signal_name = this.PROTOCOL === PROTOCOLS.XMODEM1K ? 'STX' : this.packet_request_signal_name
   }
 
   /**
@@ -129,8 +139,8 @@ export default class Xmodem extends EventEmitter {
       * @property {string} - Indicates transmission mode 'crc' or 'normal'
       */
           this.emit('start', this.XMODEM_OP_MODE)
-          sendBlock(socket, blockNumber, packagedBuffer[blockNumber], this.XMODEM_OP_MODE)
-          this.emit('status', { action: 'send', signal: 'SOH', block: blockNumber })
+          this._sendBlock(socket, blockNumber, packagedBuffer[blockNumber])
+          this.emit('status', { action: 'send', signal: this.packet_request_signal_name, block: blockNumber })
           blockNumber++
         }
       }
@@ -139,8 +149,8 @@ export default class Xmodem extends EventEmitter {
         this.XMODEM_OP_MODE = 'normal'
         if(packagedBuffer.length > blockNumber) {
           this.emit('start', this.XMODEM_OP_MODE)
-          sendBlock(socket, blockNumber, packagedBuffer[blockNumber], this.XMODEM_OP_MODE)
-          this.emit('status', { action: 'send', signal: 'SOH', block: blockNumber })
+          this._sendBlock(socket, blockNumber, packagedBuffer[blockNumber])
+          this.emit('status', { action: 'send', signal: this.packet_request_signal_name, block: blockNumber })
           blockNumber++
         }
       }
@@ -153,8 +163,8 @@ export default class Xmodem extends EventEmitter {
         debugLog('ACK RECEIVED')
         this.emit('status', { action: 'recv', signal: 'ACK' })
         if(packagedBuffer.length > blockNumber) {
-          sendBlock(socket, blockNumber, packagedBuffer[blockNumber], this.XMODEM_OP_MODE)
-          this.emit('status', { action: 'send', signal: 'SOH', block: blockNumber })
+          this._sendBlock(socket, blockNumber, packagedBuffer[blockNumber])
+          this.emit('status', { action: 'send', signal: this.packet_request_signal_name, block: blockNumber })
           blockNumber++
         }
         else if(packagedBuffer.length === blockNumber) {
@@ -182,8 +192,8 @@ export default class Xmodem extends EventEmitter {
           this.emit('status', { action: 'recv', signal: 'NAK' })
           blockNumber--
           if(packagedBuffer.length > blockNumber) {
-            sendBlock(socket, blockNumber, packagedBuffer[blockNumber], this.XMODEM_OP_MODE)
-            this.emit('status', { action: 'send', signal: 'SOH', block: blockNumber })
+            this._sendBlock(socket, blockNumber, packagedBuffer[blockNumber])
+            this.emit('status', { action: 'send', signal: this.packet_request_signal_name, block: blockNumber })
             blockNumber++
           }
         }
@@ -322,46 +332,48 @@ export default class Xmodem extends EventEmitter {
 
     return intervalID
   }
-}
 
 
-function sendBlock(socket, blockNr, blockData, mode) {
-  let crcCalc = 0
-  let sendBuffer = Buffer.concat([Buffer.from([SOH]),
-    Buffer.from([blockNr]),
-    Buffer.from([(0xFF - blockNr)]),
-    blockData
-  ])
-  debugLog('SENDBLOCK! Data length: ' + blockData.length)
-  debugLog(sendBuffer)
-  if(mode === 'crc') {
-    var crcString = crc.crc16xmodem(blockData).toString(16)
-    // Need to avoid odd string for Buffer creation
-    if(crcString.length % 2 == 1) {
-      crcString = '0'.concat(crcString)
+  _sendBlock(socket, blockNr, blockData) {
+    let crcCalc = 0
+    let sendBuffer = Buffer.concat([Buffer.from([this.packet_request_signal]),
+      Buffer.from([blockNr]),
+      Buffer.from([(0xFF - blockNr)]),
+      blockData
+    ])
+    debugLog('SENDBLOCK! Data length: ' + blockData.length)
+    debugLog(sendBuffer)
+    if(this.XMODEM_OP_MODE === 'crc') {
+      var crcString = crc.crc16xmodem(blockData).toString(16)
+      // Need to avoid odd string for Buffer creation
+      if(crcString.length % 2 == 1) {
+        crcString = '0'.concat(crcString)
+      }
+      // CRC must be 2 bytes of length
+      if(crcString.length === 2) {
+        crcString = '00'.concat(crcString)
+      }
+      sendBuffer = Buffer.concat([sendBuffer, Buffer.from(crcString, 'hex')])
     }
-    // CRC must be 2 bytes of length
-    if(crcString.length === 2) {
-      crcString = '00'.concat(crcString)
-    }
-    sendBuffer = Buffer.concat([sendBuffer, Buffer.from(crcString, 'hex')])
-  }
-  else {
+    else {
     // Count only the blockData into the checksum
-    for(let i = 3; i < sendBuffer.length; i++) {
-      crcCalc = crcCalc + sendBuffer.readUInt8(i)
-    }
-    crcCalc = crcCalc % 256
-    crcCalc = crcCalc.toString(16)
-    if((crcCalc.length % 2) != 0) {
+      for(let i = 3; i < sendBuffer.length; i++) {
+        crcCalc = crcCalc + sendBuffer.readUInt8(i)
+      }
+      crcCalc = crcCalc % 256
+      crcCalc = crcCalc.toString(16)
+      if((crcCalc.length % 2) != 0) {
       // Add padding for the string to be even
-      crcCalc = '0' + crcCalc
+        crcCalc = '0' + crcCalc
+      }
+      sendBuffer = Buffer.concat([sendBuffer, Buffer.from(crcCalc, 'hex')])
     }
-    sendBuffer = Buffer.concat([sendBuffer, Buffer.from(crcCalc, 'hex')])
+    debugLog('Sending buffer with total length: ' + sendBuffer.length)
+    socket.write(sendBuffer)
   }
-  debugLog('Sending buffer with total length: ' + sendBuffer.length)
-  socket.write(sendBuffer)
 }
+
+
 
 function receiveBlock(socket, blockNr, blockData, block_size, mode, callback) {
   const cmd = blockData[0]

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import XModem from './protocols/xmodem.js'
+import XModem, {PROTOCOLS} from './protocols/xmodem.js'
 import SerialPort from 'serialport'
 import fs from 'fs'
 import { Command, Option } from 'commander'
@@ -11,10 +11,11 @@ const program = new Command()
 
 program
   .arguments('<port> <filename>')
-  .addOption(new Option('-b, --baud <baud-rate>', 'the baud rate to use').default(38400))
+  .addOption(new Option('-b, --baud <baud-rate>', 'the baud rate to use').default(19200))
+  .addOption(new Option('-p, --protocol <protocol>', 'the protocol to use').choices(['xmodem', 'xmodem1k']).default('xmodem'))
   .description('Transmit the file over serial port using the xmodem protocol')
   .action((port, filename) => {
-    const {baud} = program.opts()
+    const {baud, protocol} = program.opts()
     console.log(`Preparing to send file '${filename}' over port ${port}, baud: ${baud}`)
 
     const stats = fs.statSync(filename)
@@ -45,7 +46,9 @@ program
       process.exit()
     })
 
-    const xmodem = new XModem()
+    const xmodem = new XModem({
+      PROTOCOL: protocol === 'xmodem' ? PROTOCOLS.XMODEM : PROTOCOLS.XMODEM1K
+    })
 
     xmodem
       .on('start', mode => {
