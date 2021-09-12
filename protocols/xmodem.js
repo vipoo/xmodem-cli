@@ -122,7 +122,6 @@ export default class Xmodem extends EventEmitter {
     */
     this.emit('ready', packagedBuffer.length - 1) // We don't count the filler
 
-
     socket.on('data', data => {
       /*
       * Here we handle the beginning of the transmission
