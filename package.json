@@ -10,7 +10,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build-exe": "caxa --input . --output xmodem.exe --exclude .git --exclude xmodem.sh --exclude xmodem.exe -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/xmodem.js\"",
     "build-linux": "caxa --input . --output xmodem.sh --exclude .git --exclude xmodem.sh --exclude xmodem.exe -- \"{{caxa}}/node_modules/.bin/node\" \"{{caxa}}/xmodem.js\"",
-    "lint": "eslint --ext cjs,mjs,js --fix ."
+    "lint": "eslint --ext cjs,mjs,js --fix .",
+    "webserver": "http-server --no-dotfiles --port 3000",
+    "webserver:https": "http-server --no-dotfiles --port 3000 -S -C cert.pem",
+    "generate-cert":  "openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem"
   },
   "type": "module",
   "author": "Dean Netherton",
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "caxa": "^2.1.0",
-    "eslint": "^7.31.0"
+    "eslint": "^7.31.0",
+    "http-server": "^13.0.2"
   }
 }
